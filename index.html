@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Conduit">
+<meta name="theme-color" content="#0b0d0e">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' rx='40' fill='%230b0d0e'/%3E%3Crect x='38' y='34' width='104' height='66' rx='10' fill='none' stroke='%2300d6a4' stroke-width='6'/%3E%3Crect x='38' y='116' width='104' height='30' rx='8' fill='%2300d6a4'/%3E%3C/svg%3E">
+<title>Conduit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --mono: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+    --sans: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+    --accent: #00d6a4;
+  }
+  html[data-theme="dark"] {
+    --bg: #0b0d0e;
+    --surface: #141719;
+    --surface-2: #1c2023;
+    --line: #2a2f33;
+    --line-soft: #1e2225;
+    --text: #e6eaec;
+    --text-dim: #6f797e;
+    --key: #21262a;
+    --key-active: #2e353a;
+    --key-edge: #0a0c0d;
+    --pad: #101314;
+    --pad-grid: rgba(255,255,255,0.022);
+    --shadow: rgba(0,0,0,0.5);
+  }
+  html[data-theme="light"] {
+    --bg: #eceee9;
+    --surface: #f7f8f4;
+    --surface-2: #ffffff;
+    --line: #d2d6cd;
+    --line-soft: #e2e5dd;
+    --text: #1a1e1c;
+    --text-dim: #8a8f88;
+    --key: #ffffff;
+    --key-active: #e9ece5;
+    --key-edge: #c8ccc3;
+    --pad: #e3e6df;
+    --pad-grid: rgba(0,0,0,0.028);
+    --shadow: rgba(60,70,60,0.18);
+    --accent: #008f6e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    position: fixed;
+    width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: none;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* ---------- top bar ---------- */
+  #bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+    flex: 0 0 auto;
+    position: relative;
+  }
+  #status {
+    display: flex; align-items: center; gap: 7px;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;
+    color: var(--text-dim); text-transform: uppercase; white-space: nowrap;
+    cursor: pointer;
+  }
+  #statusbar {
+    flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+    padding: 5px 12px; background: var(--surface); border-top: 1px solid var(--line);
+  }
+  #dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #c0392b; box-shadow: 0 0 0 0 rgba(0,0,0,0);
+    transition: background .2s, box-shadow .2s;
+  }
+  #dot.on { background: var(--accent); box-shadow: 0 0 9px var(--accent); }
+  #dot.wait { background: #e0a526; }
+
+  .seg {
+    display: flex; margin-left: 0;
+    background: var(--surface-2); border: 1px solid var(--line);
+    border-radius: 9px; padding: 2px; gap: 2px;
+    flex-shrink: 1; min-width: 0; overflow-x: auto;
+  }
+  .seg::-webkit-scrollbar { display: none; }
+  .seg button {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.03em;
+    color: var(--text-dim); background: transparent; border: none;
+    padding: 6px 8px; border-radius: 7px; cursor: pointer; white-space: nowrap;
+    text-transform: lowercase; transition: color .15s, background .15s;
+  }
+  .seg button.sel { color: var(--bg); background: var(--accent); font-weight: 500; }
+
+  #theme, #haptic, #settingsBtn {
+    flex: 0 0 auto;
+    width: 32px; height: 32px; border-radius: 9px;
+    background: var(--surface-2); border: 1px solid var(--line);
+    color: var(--text); font-size: 15px; cursor: pointer;
+    display: grid; place-items: center;
+  }
+  #haptic { margin-left: auto; color: var(--text-dim); }
+  #haptic.on { color: var(--accent); border-color: var(--accent); }
+  #haptic svg { display: block; }
+  #hapticSwitch {
+    position: fixed; bottom: 0; right: 0;
+    width: 1px; height: 1px; opacity: 0; margin: 0; padding: 0; border: 0;
+  }
+
+  /* ---------- settings panel ---------- */
+  #panel {
+    position: absolute; top: calc(100% + 6px); right: 8px; z-index: 60;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px;
+    padding: 14px; width: 230px; box-shadow: 0 12px 34px var(--shadow);
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .prow { display: flex; flex-direction: column; gap: 7px;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text-dim); }
+  .prow .pval { color: var(--accent); float: right; }
+  .prow input[type=range] { width: 100%; accent-color: var(--accent); height: 22px; }
+  #resetSens { align-self: flex-start; background: transparent;
+    border: 1px solid var(--line); color: var(--text-dim);
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 6px 11px; border-radius: 7px; cursor: pointer; }
+  #resetSens:active { color: var(--accent); border-color: var(--accent); }
+
+  /* ---------- layout regions ---------- */
+  #regions { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+
+  /* ---------- trackpad ---------- */
+  #padWrap { flex: 1 1 0; display: flex; flex-direction: column; min-height: 0; }
+  #pad {
+    flex: 1 1 auto; position: relative; min-height: 0;
+    background:
+      linear-gradient(var(--pad-grid) 1px, transparent 1px) 0 0 / 100% 26px,
+      linear-gradient(90deg, var(--pad-grid) 1px, transparent 1px) 0 0 / 26px 100%,
+      var(--pad);
+    touch-action: none;
+    overflow: hidden;
+  }
+  #padHint {
+    position: absolute; inset: 0; display: grid; place-content: center;
+    text-align: center; pointer-events: none;
+    font-family: var(--mono); font-size: 11px; line-height: 1.9; letter-spacing: 0.05em;
+    color: var(--text-dim); opacity: 0.55; transition: opacity .3s;
+  }
+  #pad.touched #padHint { opacity: 0; }
+  .ripple {
+    position: absolute; border-radius: 50%; pointer-events: none;
+    border: 1.5px solid var(--accent); transform: translate(-50%,-50%) scale(0);
+    animation: rip .45s ease-out forwards;
+  }
+  @keyframes rip { to { transform: translate(-50%,-50%) scale(1); opacity: 0; } }
+
+  #clicks { flex: 0 0 auto; display: flex; gap: 2px; background: var(--line); }
+  #clicks button {
+    flex: 1; padding: 24px 0; border: none; background: var(--surface);
+    color: var(--text); font-family: var(--mono); font-size: 14px; font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer;
+  }
+  #clicks button:active { background: var(--key-active); color: var(--accent); }
+
+  /* ---------- draw / tablet ---------- */
+  #drawWrap { flex: 1 1 auto; position: relative; min-height: 0; }
+  #draw {
+    width: 100%; height: 100%; display: block; touch-action: none;
+    background:
+      linear-gradient(var(--pad-grid) 1px, transparent 1px) 0 0 / 100% 28px,
+      linear-gradient(90deg, var(--pad-grid) 1px, transparent 1px) 0 0 / 28px 100%,
+      var(--pad);
+  }
+  #drawHint {
+    position: absolute; inset: 0; display: grid; place-content: center;
+    text-align: center; pointer-events: none;
+    font-family: var(--mono); font-size: 11px; line-height: 1.9; letter-spacing: 0.05em;
+    color: var(--text-dim); opacity: 0.55; transition: opacity .3s;
+  }
+  #drawWrap.inking #drawHint { opacity: 0; }
+
+  /* ---------- stream deck ---------- */
+  #deckWrap { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; }
+  #deckGrid {
+    flex: 1 1 auto; min-height: 0; display: grid; gap: 8px; padding: 8px;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: 1fr;
+  }
+  @media (min-width: 620px) { #deckGrid { grid-template-columns: repeat(4, 1fr); } }
+  .deckbtn {
+    position: relative; border: 1px solid var(--line); border-radius: 14px;
+    background: var(--key); color: var(--text);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    cursor: pointer; user-select: none; touch-action: none; overflow: hidden;
+    transition: transform .05s, background .1s;
+  }
+  .deckbtn:active { background: var(--key-active); transform: scale(0.97); }
+  .deckbtn .glyph { font-size: clamp(22px, 5vh, 40px); line-height: 1; }
+  .deckbtn .lbl {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em;
+    color: var(--text-dim); text-align: center; padding: 0 6px;
+    max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .deckbtn .rm {
+    position: absolute; top: 5px; right: 5px; width: 22px; height: 22px; border-radius: 50%;
+    background: #c0392b; color: #fff; border: none; font-size: 14px; line-height: 22px;
+    display: none; cursor: pointer; padding: 0;
+  }
+  #deckWrap.editing .deckbtn .rm { display: block; }
+  #deckWrap.editing .deckbtn { border-style: dashed; animation: wiggle .4s ease-in-out infinite alternate; }
+  @keyframes wiggle { from { transform: rotate(-0.5deg); } to { transform: rotate(0.5deg); } }
+  .deckadd {
+    border: 1.5px dashed var(--line); border-radius: 14px; background: transparent;
+    color: var(--text-dim); font-size: 30px; display: grid; place-items: center;
+    cursor: pointer; touch-action: none;
+  }
+  #deckBar {
+    flex: 0 0 auto; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+    padding: 8px 10px;
+    border-top: 1px solid var(--line); background: var(--surface);
+  }
+  #deckPager { grid-column: 2; display: flex; align-items: center; gap: 10px; }
+  #deckEdit { grid-column: 3; justify-self: end; }
+  .deckctl {
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--text);
+    font-family: var(--mono); font-size: 12px; min-width: 38px; height: 32px;
+    border-radius: 8px; cursor: pointer; padding: 0 10px;
+  }
+  .deckctl:active { background: var(--key-active); }
+  #deckEdit.on { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  #deckDots { display: flex; gap: 6px; justify-content: center; }
+  #deckDots .pdot { width: 7px; height: 7px; border-radius: 50%; background: var(--line); }
+  #deckDots .pdot.on { background: var(--accent); }
+
+  /* ---------- deck editor modal ---------- */
+  #deckEditor {
+    position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.5);
+    display: flex; align-items: flex-end; justify-content: center;
+    padding: 0; padding-bottom: env(safe-area-inset-bottom);
+  }
+  @media (min-width: 620px) { #deckEditor { align-items: center; } }
+  .sheet {
+    width: 100%; max-width: 460px; max-height: 88vh; overflow-y: auto;
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 16px 16px 0 0; padding: 16px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  @media (min-width: 620px) { .sheet { border-radius: 16px; } }
+  .sheetTitle { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); }
+  .presetRow { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+  .presetRow::-webkit-scrollbar { display: none; }
+  .presetRow button {
+    flex: 0 0 auto; background: var(--surface-2); border: 1px solid var(--line);
+    color: var(--text); border-radius: 9px; padding: 7px 10px; cursor: pointer;
+    font-size: 13px; white-space: nowrap; display: flex; align-items: center; gap: 6px;
+  }
+  .presetRow button .pg { font-size: 15px; }
+  .frow { display: flex; flex-direction: column; gap: 7px;
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); }
+  .frow input, .frow textarea {
+    font-family: var(--sans); font-size: 15px; color: var(--text); text-transform: none; letter-spacing: 0;
+    background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; padding: 10px;
+    width: 100%; box-sizing: border-box; resize: none;
+  }
+  .seg2 { display: flex; gap: 4px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; padding: 3px; }
+  .seg2 button { flex: 1; background: transparent; border: none; color: var(--text-dim);
+    font-family: var(--mono); font-size: 11px; padding: 8px 0; border-radius: 7px; cursor: pointer; text-transform: lowercase; }
+  .seg2 button.sel { background: var(--accent); color: var(--bg); font-weight: 500; }
+  .chiprow { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chiprow button {
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 8px; padding: 8px 12px; cursor: pointer; font-family: var(--mono); font-size: 12px;
+  }
+  .chiprow button.sel { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .sheetBtns { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .sheetBtns .spacer { flex: 1; }
+  .sheetBtns button {
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--text);
+    border-radius: 9px; padding: 9px 16px; cursor: pointer; font-family: var(--mono); font-size: 12px;
+  }
+  .sheetBtns .primary { background: var(--accent); color: var(--bg); border-color: var(--accent); font-weight: 500; }
+  .sheetBtns .danger { color: #c0392b; border-color: #c0392b; }
+
+  /* ---------- keyboard ---------- */
+  #kb {
+    flex: 1.3 1 0; min-height: 0; background: var(--surface);
+    border-top: 1px solid var(--line);
+    padding: 6px 5px 6px;
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  body[data-mode="keyboard"] #kb { flex: 1 1 auto; }
+  .krow { flex: 1 1 0; min-height: 0; display: flex; gap: 5px; justify-content: center; }
+  .key {
+    flex: 1 1 0; min-width: 0; height: 100%;
+    background: var(--key);
+    border: none;
+    border-radius: 7px;
+    box-shadow: 0 1.5px 0 var(--key-edge);
+    color: var(--text);
+    font-family: var(--sans); font-size: clamp(15px, 2.3vh, 24px); font-weight: 500;
+    display: grid; place-items: center;
+    cursor: pointer; user-select: none; touch-action: none;
+    transition: transform .04s, background .1s;
+  }
+  .key:active, .key.held { background: var(--key-active); transform: translateY(1px); box-shadow: 0 0 0 var(--key-edge); }
+  .key.mono { font-family: var(--mono); font-size: clamp(10px, 1.4vh, 14px); letter-spacing: 0.03em; color: var(--text-dim); }
+  .key.del { font-size: clamp(24px, 4vh, 38px); font-weight: 700; color: var(--text); }
+  .key.armed { background: var(--accent); color: var(--bg); box-shadow: 0 1.5px 0 var(--key-edge); }
+  .key.locked { background: var(--accent); color: var(--bg); }
+  .key.locked::after {
+    content: ''; position: absolute; bottom: 5px; width: 4px; height: 4px;
+    border-radius: 50%; background: var(--bg);
+  }
+  .key.armed, .key.locked { position: relative; }
+  .key.wide { flex-grow: 1.6; }
+  .key.space { flex-grow: 5; }
+  .key.half { flex-grow: 0.7; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body data-mode="both">
+<!-- toggling a native iOS switch fires a haptic tick (iOS 18+); kept off-screen -->
+<input type="checkbox" switch id="hapticSwitch" tabindex="-1" aria-hidden="true">
+<div id="app">
+  <div id="bar">
+    <div class="seg" id="seg">
+      <button data-mode="trackpad">pad</button>
+      <button data-mode="keyboard">keys</button>
+      <button data-mode="both" class="sel">both</button>
+      <button data-mode="draw">draw</button>
+      <button data-mode="deck">deck</button>
+    </div>
+    <button id="haptic" class="on" aria-label="toggle haptics">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="4" width="6" height="16" rx="1.5"/><path d="M5 9v6M19 9v6"/></svg>
+    </button>
+    <button id="theme" aria-label="toggle theme">◐</button>
+    <button id="settingsBtn" aria-label="settings">⚙</button>
+    <div id="panel" class="hidden">
+      <label class="prow">pointer speed <span class="pval" id="spdVal">1.5</span>
+        <input id="spd" type="range" min="0.4" max="10" step="0.1">
+      </label>
+      <label class="prow">acceleration <span class="pval" id="accVal">0.06</span>
+        <input id="acc" type="range" min="0" max="0.5" step="0.01">
+      </label>
+      <button id="resetSens">reset</button>
+    </div>
+  </div>
+
+  <div id="regions">
+    <div id="padWrap">
+      <div id="pad">
+        <div id="padHint">drag&nbsp;to&nbsp;move&nbsp;·&nbsp;tap&nbsp;=&nbsp;click<br>two&nbsp;fingers&nbsp;=&nbsp;scroll&nbsp;/&nbsp;right-click<br>press&nbsp;&amp;&nbsp;hold&nbsp;(or&nbsp;hold&nbsp;L&nbsp;button)&nbsp;=&nbsp;drag</div>
+      </div>
+      <div id="clicks">
+        <button id="lclick">left</button>
+        <button id="rclick">right</button>
+      </div>
+    </div>
+    <div id="kb"></div>
+    <div id="drawWrap" class="hidden">
+      <canvas id="draw"></canvas>
+      <div id="drawHint">draw with a finger or Apple&nbsp;Pencil<br>this surface maps 1:1 to your screen</div>
+    </div>
+    <div id="deckWrap" class="hidden">
+      <div id="deckGrid"></div>
+      <div id="deckBar">
+        <div id="deckPager">
+          <button id="deckPrev" class="deckctl">‹</button>
+          <div id="deckDots"></div>
+          <button id="deckNext" class="deckctl">›</button>
+        </div>
+        <button id="deckEdit" class="deckctl">edit</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="deckEditor" class="hidden">
+    <div class="sheet">
+      <div class="sheetTitle">deck button</div>
+      <div class="presetRow" id="presetRow"></div>
+      <label class="frow">label<input id="edLabel" type="text" maxlength="16" autocomplete="off"></label>
+      <label class="frow">icon (emoji/symbol)<input id="edGlyph" type="text" maxlength="3" autocomplete="off"></label>
+      <div class="frow">action
+        <div class="seg2" id="edType">
+          <button data-t="shortcut" class="sel">shortcut</button>
+          <button data-t="media">media</button>
+          <button data-t="text">text</button>
+        </div>
+      </div>
+      <div id="edShortcut">
+        <div class="chiprow" id="edMods">
+          <button data-m="ctrl">Ctrl</button>
+          <button data-m="alt">Alt</button>
+          <button data-m="win">Win</button>
+          <button data-m="shift">Shift</button>
+        </div>
+        <label class="frow">key<input id="edKey" type="text" maxlength="8" autocomplete="off" placeholder="e.g. c, d, ., f5, tab, enter, up"></label>
+      </div>
+      <div id="edMedia" class="hidden">
+        <div class="chiprow" id="edMediaSel">
+          <button data-k="volup">Vol +</button>
+          <button data-k="voldown">Vol &minus;</button>
+          <button data-k="mute">Mute</button>
+          <button data-k="playpause">Play/Pause</button>
+          <button data-k="next">Next</button>
+          <button data-k="prev">Prev</button>
+        </div>
+      </div>
+      <div id="edText" class="hidden">
+        <textarea id="edTextVal" rows="3" placeholder="text to type out"></textarea>
+      </div>
+      <div class="sheetBtns">
+        <button id="edDelete" class="danger">delete</button>
+        <span class="spacer"></span>
+        <button id="edCancel">cancel</button>
+        <button id="edSave" class="primary">save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="statusbar">
+    <div id="status"><span id="dot"></span><span id="statusText">connecting</span></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ============ connection ============ */
+  let ws = null, wsReady = false, connectTimer = null;
+  const dot = document.getElementById('dot');
+  const statusText = document.getElementById('statusText');
+
+  function getTarget() {
+    let saved = '';
+    try { saved = localStorage.getItem('conduitHost') || ''; } catch (e) {}
+    return saved || location.host;   // host:port the page was served from
+  }
+  let target = getTarget();
+
+  function setStatus(state) {
+    dot.className = state === 'on' ? 'on' : state === 'wait' ? 'wait' : '';
+    statusText.textContent = state === 'on' ? 'linked' : state === 'wait' ? 'connecting' : 'tap to set PC';
+  }
+
+  function connect() {
+    clearTimeout(connectTimer);
+    if (!target) { setStatus('off'); return; }   // opened as a bare file with no host
+    setStatus('wait');
+    try {
+      ws = new WebSocket(`ws://${target}/ws`);
+    } catch (e) { setStatus('off'); setTimeout(connect, 1500); return; }
+    // a dropped (not refused) connection can hang in CONNECTING forever — force a clear fail
+    connectTimer = setTimeout(() => { if (!wsReady) { try { ws.close(); } catch (e) {} } }, 4000);
+    ws.onopen = () => { wsReady = true; clearTimeout(connectTimer); setStatus('on'); if (typeof resetMods === 'function') resetMods(); };
+    ws.onclose = () => { wsReady = false; clearTimeout(connectTimer); setStatus('off'); setTimeout(connect, 1500); };
+    ws.onerror = () => { try { ws.close(); } catch (e) {} };
+  }
+
+  // tap the status pill to point at the PC manually (e.g. if its IP changed, or opened from a file)
+  document.getElementById('status').addEventListener('click', () => {
+    const v = prompt('PC address shown by the helper (host:port):', target || '192.168.1.50:8765');
+    if (v && v.trim()) {
+      target = v.trim().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+      try { localStorage.setItem('conduitHost', target); } catch (e) {}
+      wsReady = false;
+      try { if (ws) ws.close(); } catch (e) {}
+      connect();
+    }
+  });
+
+  function send(obj) { if (wsReady) { try { ws.send(JSON.stringify(obj)); } catch (e) {} } }
+  connect();
+
+  /* ============ mode + theme ============ */
+  const body = document.body;
+  document.getElementById('seg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    body.dataset.mode = b.dataset.mode;
+    document.querySelectorAll('#seg button').forEach(x => x.classList.toggle('sel', x === b));
+    applyMode();
+  });
+  function applyMode() {
+    const m = body.dataset.mode;
+    document.getElementById('padWrap').classList.toggle('hidden', !(m === 'trackpad' || m === 'both'));
+    document.getElementById('kb').classList.toggle('hidden', !(m === 'keyboard' || m === 'both'));
+    document.getElementById('drawWrap').classList.toggle('hidden', m !== 'draw');
+    document.getElementById('deckWrap').classList.toggle('hidden', m !== 'deck');
+    if (m === 'draw') resizeDrawCanvas();
+    if (m === 'deck') renderDeck();
+  }
+  applyMode();
+
+  const themeBtn = document.getElementById('theme');
+  const root = document.documentElement;
+  themeBtn.addEventListener('click', () => {
+    const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    root.dataset.theme = next;
+    document.querySelector('meta[name="theme-color"]').content = next === 'dark' ? '#0b0d0e' : '#eceee9';
+  });
+
+  /* ============ haptics ============ */
+  const hapticSwitch = document.getElementById('hapticSwitch');
+  let hapticsOn = true;
+  function haptic() {
+    if (!hapticsOn) return;
+    // iOS 18+: toggling a native <input switch> emits a haptic tick
+    try { hapticSwitch.click(); } catch (e) {}
+    // Android / other engines: real vibration API (no-op on iOS)
+    try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) {}
+  }
+  const hapticBtn = document.getElementById('haptic');
+  hapticBtn.addEventListener('click', () => {
+    hapticsOn = !hapticsOn;
+    hapticBtn.classList.toggle('on', hapticsOn);
+    if (hapticsOn) haptic();
+  });
+
+  /* ============ sensitivity settings ============ */
+  function loadNum(key, def) {
+    try { const v = parseFloat(localStorage.getItem(key)); return isNaN(v) ? def : v; }
+    catch (e) { return def; }
+  }
+  let MOVE_GAIN = loadNum('conduitSpd', 1.5);   // base pointer sensitivity
+  let ACCEL = loadNum('conduitAcc', 0.06);      // extra gain per px/ms of finger speed
+
+  const panel = document.getElementById('panel');
+  const spd = document.getElementById('spd'), acc = document.getElementById('acc');
+  const spdVal = document.getElementById('spdVal'), accVal = document.getElementById('accVal');
+  function syncSliders() {
+    spd.value = MOVE_GAIN; acc.value = ACCEL;
+    spdVal.textContent = (+MOVE_GAIN).toFixed(1);
+    accVal.textContent = (+ACCEL).toFixed(2);
+  }
+  syncSliders();
+  document.getElementById('settingsBtn').addEventListener('click', () => panel.classList.toggle('hidden'));
+  spd.addEventListener('input', () => {
+    MOVE_GAIN = parseFloat(spd.value); spdVal.textContent = MOVE_GAIN.toFixed(1);
+    try { localStorage.setItem('conduitSpd', MOVE_GAIN); } catch (e) {}
+  });
+  acc.addEventListener('input', () => {
+    ACCEL = parseFloat(acc.value); accVal.textContent = ACCEL.toFixed(2);
+    try { localStorage.setItem('conduitAcc', ACCEL); } catch (e) {}
+  });
+  document.getElementById('resetSens').addEventListener('click', () => {
+    MOVE_GAIN = 1.5; ACCEL = 0.06; syncSliders();
+    try { localStorage.setItem('conduitSpd', MOVE_GAIN); localStorage.setItem('conduitAcc', ACCEL); } catch (e) {}
+  });
+  // tap outside the panel to close it
+  document.addEventListener('pointerdown', e => {
+    if (panel.classList.contains('hidden')) return;
+    const gear = document.getElementById('settingsBtn');
+    if (!panel.contains(e.target) && !gear.contains(e.target)) panel.classList.add('hidden');
+  });
+
+  /* ============ trackpad ============ */
+  const pad = document.getElementById('pad');
+  const SCROLL_STEP = 9;      // px of finger travel per scroll notch
+  const TAP_MS = 250, TAP_PX = 9;
+
+  let pendingDX = 0, pendingDY = 0;
+  function flush() {
+    if (pendingDX || pendingDY) {
+      send({ t: 'move', dx: Math.round(pendingDX), dy: Math.round(pendingDY) });
+      pendingDX = pendingDY = 0;
+    }
+    requestAnimationFrame(flush);
+  }
+  requestAnimationFrame(flush);
+
+  let mode = 'idle';          // idle | move | scroll
+  let startT = 0, startX = 0, startY = 0, lastX = 0, lastY = 0, lastT = 0, maxMove = 0;
+  let dragging = false, scrollAcc = 0, pressTimer = null;
+  const LONGPRESS_MS = 420;   // press and hold this long (without moving) to start a drag
+
+  function startLongPress() {
+    clearTimeout(pressTimer);
+    pressTimer = setTimeout(() => {
+      if (mode === 'move' && !dragging && maxMove < TAP_PX) {
+        dragging = true; haptic();
+        send({ t: 'button', b: 'left', a: 'down' });
+      }
+    }, LONGPRESS_MS);
+  }
+
+  function ripple(x, y) {
+    const r = pad.getBoundingClientRect();
+    const d = document.createElement('div');
+    d.className = 'ripple';
+    d.style.left = (x - r.left) + 'px'; d.style.top = (y - r.top) + 'px';
+    d.style.width = d.style.height = '46px';
+    pad.appendChild(d);
+    setTimeout(() => d.remove(), 460);
+  }
+
+  pad.addEventListener('touchstart', e => {
+    e.preventDefault();
+    pad.classList.add('touched');
+    const now = performance.now();
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      startX = lastX = t.clientX; startY = lastY = t.clientY;
+      startT = lastT = now; maxMove = 0; scrollAcc = 0;
+      mode = 'move';
+      startLongPress();           // hold still to begin a drag
+    } else if (e.touches.length === 2) {
+      clearTimeout(pressTimer);
+      if (dragging) { dragging = false; send({ t: 'button', b: 'left', a: 'up' }); }
+      mode = 'scroll'; scrollAcc = 0; maxMove = 0;
+      const [a, b] = e.touches;
+      lastY = (a.clientY + b.clientY) / 2;
+      lastX = (a.clientX + b.clientX) / 2;
+      startT = now;
+    }
+  }, { passive: false });
+
+  pad.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const now = performance.now();
+    if (mode === 'move' && e.touches.length === 1) {
+      const t = e.touches[0];
+      let dx = t.clientX - lastX, dy = t.clientY - lastY;
+      const dt = Math.max(now - lastT, 1);
+      const speed = Math.hypot(dx, dy) / dt;
+      const gain = MOVE_GAIN + speed * ACCEL;
+      pendingDX += dx * gain; pendingDY += dy * gain;
+      maxMove += Math.hypot(dx, dy);
+      if (!dragging && maxMove >= TAP_PX) clearTimeout(pressTimer);   // moving = not a long-press
+      lastX = t.clientX; lastY = t.clientY; lastT = now;
+    } else if (mode === 'scroll' && e.touches.length === 2) {
+      const [a, b] = e.touches;
+      const cy = (a.clientY + b.clientY) / 2;
+      const cx = (a.clientX + b.clientX) / 2;
+      scrollAcc += cy - lastY;
+      maxMove += Math.abs(cy - lastY) + Math.abs(cx - lastX);
+      while (Math.abs(scrollAcc) >= SCROLL_STEP) {
+        const dir = scrollAcc > 0 ? -1 : 1;          // finger down -> scroll down
+        send({ t: 'scroll', dy: dir });
+        scrollAcc -= (scrollAcc > 0 ? SCROLL_STEP : -SCROLL_STEP);
+      }
+      lastY = cy; lastX = cx;
+    }
+  }, { passive: false });
+
+  pad.addEventListener('touchend', e => {
+    e.preventDefault();
+    const now = performance.now();
+    clearTimeout(pressTimer);
+    if (dragging && e.touches.length === 0) {
+      dragging = false;
+      send({ t: 'button', b: 'left', a: 'up' });
+      return;
+    }
+    if (mode === 'move' && e.touches.length === 0) {
+      if (maxMove < TAP_PX && now - startT < TAP_MS) {
+        send({ t: 'button', b: 'left', a: 'click' });
+        haptic();
+        ripple(startX, startY);
+      }
+    } else if (mode === 'scroll' && e.touches.length < 2) {
+      if (maxMove < TAP_PX && now - startT < TAP_MS) {
+        send({ t: 'button', b: 'right', a: 'click' });
+        haptic();
+        ripple(lastX, lastY);
+      }
+      mode = e.touches.length === 1 ? 'move' : 'idle';
+      if (e.touches.length === 1) {
+        const t = e.touches[0];
+        lastX = t.clientX; lastY = t.clientY; lastT = now; maxMove = 0;
+      }
+    }
+    if (e.touches.length === 0) mode = 'idle';
+  }, { passive: false });
+
+  // physical click buttons: press-and-hold (tap = click, hold while dragging on pad = drag)
+  function holdBtn(id, b) {
+    const el = document.getElementById(id);
+    el.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      try { el.setPointerCapture(e.pointerId); } catch (_) {}
+      haptic();
+      send({ t: 'button', b, a: 'down' });
+    });
+    const release = () => send({ t: 'button', b, a: 'up' });
+    el.addEventListener('pointerup', release);
+    el.addEventListener('pointercancel', release);
+  }
+  holdBtn('lclick', 'left'); holdBtn('rclick', 'right');
+
+  /* ============ drawing tablet ============ */
+  const draw = document.getElementById('draw');
+  const drawWrap = document.getElementById('drawWrap');
+  const dctx = draw.getContext('2d');
+  let activePointer = null, penDown = false, inkLast = null;
+
+  function resizeDrawCanvas() {
+    const r = draw.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    const dpr = window.devicePixelRatio || 1;
+    draw.width = Math.round(r.width * dpr);
+    draw.height = Math.round(r.height * dpr);
+    dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', () => { if (body.dataset.mode === 'draw') resizeDrawCanvas(); });
+
+  function drawNorm(e) {
+    const r = draw.getBoundingClientRect();
+    return {
+      x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
+      y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)),
+      cx: e.clientX - r.left, cy: e.clientY - r.top
+    };
+  }
+
+  draw.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (penDown && e.pointerType !== 'pen') return;          // palm rejection while Pencil is active
+    if (activePointer !== null && e.pointerId !== activePointer) return;
+    activePointer = e.pointerId;
+    if (e.pointerType === 'pen') penDown = true;
+    try { draw.setPointerCapture(e.pointerId); } catch (_) {}
+    drawWrap.classList.add('inking');
+    const n = drawNorm(e);
+    inkLast = { x: n.cx, y: n.cy };
+    haptic();
+    send({ t: 'pen', a: 'down', x: n.x, y: n.y });
+  });
+
+  draw.addEventListener('pointermove', e => {
+    if (e.pointerId !== activePointer) {
+      // Apple Pencil hovering (not touching) -> move the cursor without drawing
+      if (activePointer === null && e.pointerType === 'pen') {
+        const n = drawNorm(e);
+        send({ t: 'pen', a: 'hover', x: n.x, y: n.y });
+      }
+      return;
+    }
+    e.preventDefault();
+    const n = drawNorm(e);
+    send({ t: 'pen', a: 'move', x: n.x, y: n.y });
+    // local ink feedback (width tracks Pencil pressure where available)
+    const w = 2 + (e.pressure ? e.pressure * 6 : 1.5);
+    dctx.strokeStyle = (getComputedStyle(root).getPropertyValue('--accent').trim() || '#00d6a4');
+    dctx.lineWidth = w; dctx.lineCap = 'round'; dctx.lineJoin = 'round';
+    dctx.beginPath(); dctx.moveTo(inkLast.x, inkLast.y); dctx.lineTo(n.cx, n.cy); dctx.stroke();
+    inkLast = { x: n.cx, y: n.cy };
+  });
+
+  function endDraw(e) {
+    if (e.pointerId !== activePointer) return;
+    send({ t: 'pen', a: 'up' });
+    activePointer = null;
+    if (e.pointerType === 'pen') penDown = false;
+  }
+  draw.addEventListener('pointerup', endDraw);
+  draw.addEventListener('pointercancel', endDraw);
+
+  // gently fade the local ink trail so the surface stays clean
+  function fadeLoop() {
+    if (body.dataset.mode === 'draw' && draw.width) {
+      const r = draw.getBoundingClientRect();
+      dctx.save();
+      dctx.globalCompositeOperation = 'destination-out';
+      dctx.fillStyle = 'rgba(0,0,0,0.05)';
+      dctx.fillRect(0, 0, r.width, r.height);
+      dctx.restore();
+    }
+    requestAnimationFrame(fadeLoop);
+  }
+  requestAnimationFrame(fadeLoop);
+
+  /* ============ stream deck ============ */
+  const DECK_DEFAULTS = [
+    { label: 'Show Desktop', glyph: '🖥', type: 'shortcut', mods: ['win'], key: 'd' },
+    { label: 'Copy', glyph: '⧉', type: 'shortcut', mods: ['ctrl'], key: 'c' },
+    { label: 'Paste', glyph: '📋', type: 'shortcut', mods: ['ctrl'], key: 'v' },
+    { label: 'Undo', glyph: '↺', type: 'shortcut', mods: ['ctrl'], key: 'z' },
+    { label: 'Emoji', glyph: '☺', type: 'shortcut', mods: ['win'], key: '.' },
+    { label: 'Switch App', glyph: '⇄', type: 'shortcut', mods: ['alt'], key: 'tab' },
+    { label: 'Vol +', glyph: '🔊', type: 'media', mods: [], key: 'volup' },
+    { label: 'Vol −', glyph: '🔉', type: 'media', mods: [], key: 'voldown' },
+  ];
+  const DECK_PRESETS = [
+    ...DECK_DEFAULTS,
+    { label: 'Cut', glyph: '✂', type: 'shortcut', mods: ['ctrl'], key: 'x' },
+    { label: 'Redo', glyph: '↻', type: 'shortcut', mods: ['ctrl'], key: 'y' },
+    { label: 'Select All', glyph: '▦', type: 'shortcut', mods: ['ctrl'], key: 'a' },
+    { label: 'Save', glyph: '💾', type: 'shortcut', mods: ['ctrl'], key: 's' },
+    { label: 'Find', glyph: '🔍', type: 'shortcut', mods: ['ctrl'], key: 'f' },
+    { label: 'Screenshot', glyph: '📸', type: 'shortcut', mods: ['win', 'shift'], key: 's' },
+    { label: 'Lock PC', glyph: '🔒', type: 'shortcut', mods: ['win'], key: 'l' },
+    { label: 'Task View', glyph: '🗔', type: 'shortcut', mods: ['win'], key: 'tab' },
+    { label: 'Close', glyph: '✕', type: 'shortcut', mods: ['alt'], key: 'f4' },
+    { label: 'Mute', glyph: '🔇', type: 'media', mods: [], key: 'mute' },
+    { label: 'Play/Pause', glyph: '⏯', type: 'media', mods: [], key: 'playpause' },
+    { label: 'Next', glyph: '⏭', type: 'media', mods: [], key: 'next' },
+    { label: 'Prev', glyph: '⏮', type: 'media', mods: [], key: 'prev' },
+  ];
+  const PER_PAGE = 8;
+
+  function loadDeck() {
+    try {
+      const raw = localStorage.getItem('conduitDeck');
+      if (raw) { const d = JSON.parse(raw); if (Array.isArray(d) && d.length) return d; }
+    } catch (e) {}
+    return DECK_DEFAULTS.map(b => ({ ...b }));
+  }
+  function saveDeck() { try { localStorage.setItem('conduitDeck', JSON.stringify(deck)); } catch (e) {} }
+
+  let deck = loadDeck();
+  let deckPage = 0, deckEditing = false, editIndex = null;
+
+  const deckGrid = document.getElementById('deckGrid');
+  const deckDots = document.getElementById('deckDots');
+
+  function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+  function deckPageCount() { return Math.max(1, Math.ceil((deck.length + (deckEditing ? 1 : 0)) / PER_PAGE)); }
+
+  function fireAction(b) {
+    if (b.type === 'text') { send({ t: 'type', text: b.text || '' }); return; }
+    send({ t: 'combo', mods: b.mods || [], key: b.key || '' });
+  }
+  function removeAt(i) { deck.splice(i, 1); saveDeck(); renderDeck(); }
+
+  function makeDeckBtn(b, i) {
+    const el = document.createElement('button');
+    el.className = 'deckbtn';
+    el.innerHTML = `<span class="glyph">${escapeHtml(b.glyph || '•')}</span><span class="lbl">${escapeHtml(b.label || '')}</span>`;
+    const rm = document.createElement('button');
+    rm.className = 'rm'; rm.textContent = '×';
+    rm.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); removeAt(i); });
+    el.appendChild(rm);
+    el.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      if (deckEditing) openEditor(i);
+      else { haptic(); fireAction(b); }
+    });
+    return el;
+  }
+
+  function renderDeck() {
+    const pages = deckPageCount();
+    if (deckPage >= pages) deckPage = pages - 1;
+    if (deckPage < 0) deckPage = 0;
+    deckGrid.innerHTML = '';
+    const start = deckPage * PER_PAGE;
+    const total = deck.length + (deckEditing ? 1 : 0);
+    for (let i = start; i < Math.min(start + PER_PAGE, total); i++) {
+      if (i < deck.length) {
+        deckGrid.appendChild(makeDeckBtn(deck[i], i));
+      } else {
+        const add = document.createElement('button');
+        add.className = 'deckadd'; add.textContent = '+';
+        add.addEventListener('pointerdown', e => { e.preventDefault(); openEditor(null); });
+        deckGrid.appendChild(add);
+      }
+    }
+    deckDots.innerHTML = '';
+    for (let p = 0; p < pages; p++) {
+      const d = document.createElement('div');
+      d.className = 'pdot' + (p === deckPage ? ' on' : '');
+      deckDots.appendChild(d);
+    }
+  }
+
+  document.getElementById('deckEdit').addEventListener('click', () => {
+    deckEditing = !deckEditing;
+    document.getElementById('deckWrap').classList.toggle('editing', deckEditing);
+    document.getElementById('deckEdit').classList.toggle('on', deckEditing);
+    document.getElementById('deckEdit').textContent = deckEditing ? 'done' : 'edit';
+    renderDeck();
+  });
+  document.getElementById('deckPrev').addEventListener('click', () => { if (deckPage > 0) { deckPage--; renderDeck(); } });
+  document.getElementById('deckNext').addEventListener('click', () => { if (deckPage < deckPageCount() - 1) { deckPage++; renderDeck(); } });
+
+  /* ---- deck editor ---- */
+  const editor = document.getElementById('deckEditor');
+  let edMods = new Set(), edType = 'shortcut', edMedia = '';
+
+  function setEdType(t) {
+    edType = t;
+    document.querySelectorAll('#edType button').forEach(x => x.classList.toggle('sel', x.dataset.t === t));
+    document.getElementById('edShortcut').classList.toggle('hidden', t !== 'shortcut');
+    document.getElementById('edMedia').classList.toggle('hidden', t !== 'media');
+    document.getElementById('edText').classList.toggle('hidden', t !== 'text');
+  }
+  function refreshEdMods() { document.querySelectorAll('#edMods button').forEach(x => x.classList.toggle('sel', edMods.has(x.dataset.m))); }
+  function refreshEdMedia() { document.querySelectorAll('#edMediaSel button').forEach(x => x.classList.toggle('sel', x.dataset.k === edMedia)); }
+
+  function openEditor(index) {
+    editIndex = index;
+    const b = index == null ? { label: '', glyph: '', type: 'shortcut', mods: [], key: '' } : deck[index];
+    document.getElementById('edLabel').value = b.label || '';
+    document.getElementById('edGlyph').value = b.glyph || '';
+    document.getElementById('edKey').value = (b.type === 'shortcut' ? (b.key || '') : '');
+    document.getElementById('edTextVal').value = b.text || '';
+    edMods = new Set(b.type === 'shortcut' ? (b.mods || []) : []);
+    edMedia = b.type === 'media' ? (b.key || '') : '';
+    setEdType(b.type || 'shortcut');
+    refreshEdMods(); refreshEdMedia();
+    document.getElementById('edDelete').style.display = index == null ? 'none' : '';
+    editor.classList.remove('hidden');
+  }
+  function closeEditor() { editor.classList.add('hidden'); }
+
+  document.querySelectorAll('#edType button').forEach(x => x.addEventListener('click', () => setEdType(x.dataset.t)));
+  document.querySelectorAll('#edMods button').forEach(x => x.addEventListener('click', () => {
+    const m = x.dataset.m; if (edMods.has(m)) edMods.delete(m); else edMods.add(m); refreshEdMods();
+  }));
+  document.querySelectorAll('#edMediaSel button').forEach(x => x.addEventListener('click', () => { edMedia = x.dataset.k; refreshEdMedia(); }));
+
+  const presetRow = document.getElementById('presetRow');
+  DECK_PRESETS.forEach(p => {
+    const c = document.createElement('button');
+    c.innerHTML = `<span class="pg">${escapeHtml(p.glyph)}</span>${escapeHtml(p.label)}`;
+    c.addEventListener('click', () => {
+      document.getElementById('edLabel').value = p.label;
+      document.getElementById('edGlyph').value = p.glyph;
+      setEdType(p.type);
+      if (p.type === 'shortcut') { edMods = new Set(p.mods || []); document.getElementById('edKey').value = p.key || ''; refreshEdMods(); }
+      else if (p.type === 'media') { edMedia = p.key; refreshEdMedia(); }
+    });
+    presetRow.appendChild(c);
+  });
+
+  document.getElementById('edCancel').addEventListener('click', closeEditor);
+  editor.addEventListener('click', e => { if (e.target === editor) closeEditor(); });
+  document.getElementById('edDelete').addEventListener('click', () => {
+    if (editIndex != null) { deck.splice(editIndex, 1); saveDeck(); renderDeck(); }
+    closeEditor();
+  });
+  document.getElementById('edSave').addEventListener('click', () => {
+    const obj = {
+      label: document.getElementById('edLabel').value.trim() || '(button)',
+      glyph: document.getElementById('edGlyph').value.trim() || '•',
+      type: edType
+    };
+    if (edType === 'shortcut') { obj.mods = [...edMods]; obj.key = document.getElementById('edKey').value.trim().toLowerCase(); }
+    else if (edType === 'media') { obj.mods = []; obj.key = edMedia || 'playpause'; }
+    else { obj.text = document.getElementById('edTextVal').value; }
+    if (editIndex == null) deck.push(obj); else deck[editIndex] = obj;
+    saveDeck(); renderDeck(); closeEditor();
+  });
+
+  /* ============ keyboard ============ */
+  const kb = document.getElementById('kb');
+  const MODS = ['ctrl', 'alt', 'win', 'shift'];
+  const modState = {};   // each: 0 off, 1 one-shot armed, 2 locked
+  MODS.forEach(m => modState[m] = 0);
+  const lastModTap = {}; // for double-tap-to-lock detection
+  const heldOnHelper = new Set();   // mods physically pressed on the PC
+  let layer = 'default';
+
+  // layout specs: c=char, s=special(name), m=mod, L=layer-toggle
+  const LAYOUTS = {
+    default: [
+      [['esc','s','escape','mono'],['ctrl','m','ctrl','mono'],['alt','m','alt','mono'],['⊞','m','win','mono'],['tab','s','tab','mono'],['←','s','left','mono half'],['↑','s','up','mono half'],['↓','s','down','mono half'],['→','s','right','mono half']],
+      [['1','c'],['2','c'],['3','c'],['4','c'],['5','c'],['6','c'],['7','c'],['8','c'],['9','c'],['0','c']],
+      [['q','c'],['w','c'],['e','c'],['r','c'],['t','c'],['y','c'],['u','c'],['i','c'],['o','c'],['p','c']],
+      [['a','c'],['s','c'],['d','c'],['f','c'],['g','c'],['h','c'],['j','c'],['k','c'],['l','c']],
+      [['⇧','m','shift','wide'],['z','c'],['x','c'],['c','c'],['v','c'],['b','c'],['n','c'],['m','c'],['⌫','s','backspace','del wide']],
+      [['?123','L','symbols','mono wide'],[',','c'],['space','s','space','space mono'],['.','c'],['return','s','enter','mono wide']]
+    ],
+    symbols: [
+      [['esc','s','escape','mono'],['ctrl','m','ctrl','mono'],['alt','m','alt','mono'],['⊞','m','win','mono'],['tab','s','tab','mono'],['←','s','left','mono half'],['↑','s','up','mono half'],['↓','s','down','mono half'],['→','s','right','mono half']],
+      [['1','c'],['2','c'],['3','c'],['4','c'],['5','c'],['6','c'],['7','c'],['8','c'],['9','c'],['0','c']],
+      [['!','c'],['@','c'],['#','c'],['$','c'],['%','c'],['^','c'],['&','c'],['*','c'],['(','c'],[')','c']],
+      [['-','c'],['_','c'],['=','c'],['+','c'],['[','c'],[']','c'],['{','c'],['}','c'],['\\','c'],['|','c']],
+      [[';','c'],[':','c'],["'",'c'],['"','c'],['/','c'],['?','c'],['<','c'],['>','c'],['⌫','s','backspace','del wide']],
+      [['ABC','L','default','mono wide'],[',','c'],['space','s','space','space mono'],['.','c'],['return','s','enter','mono wide']]
+    ]
+  };
+
+  function buildKeyboard() {
+    kb.innerHTML = '';
+    LAYOUTS[layer].forEach(row => {
+      const r = document.createElement('div'); r.className = 'krow';
+      row.forEach(spec => {
+        const [label, type, val, cls] = spec;
+        const k = document.createElement('button');
+        k.className = 'key' + (cls ? ' ' + cls : '');
+        k.textContent = label;
+        k.dataset.type = type;
+        if (val) k.dataset.val = val;
+        if (type === 'm') {
+          k.dataset.mod = val;
+          refreshMod(k, val);
+        }
+        bindKey(k, type, val, label);
+        r.appendChild(k);
+      });
+      kb.appendChild(r);
+    });
+  }
+
+  function refreshMod(el, m) {
+    el.classList.toggle('armed', modState[m] === 1);
+    el.classList.toggle('locked', modState[m] === 2);
+  }
+  function refreshAllMods() {
+    document.querySelectorAll('.key[data-mod]').forEach(el => refreshMod(el, el.dataset.mod));
+  }
+
+  function activeMods() {
+    return MODS.filter(m => modState[m] > 0);
+  }
+  // sync the PC's physically-held modifiers to match `target` set
+  function syncHeld(target) {
+    const want = new Set(target);
+    for (const m of MODS) {
+      if (want.has(m) && !heldOnHelper.has(m)) { send({ t: 'mod', m, down: true }); heldOnHelper.add(m); }
+      if (!want.has(m) && heldOnHelper.has(m)) { send({ t: 'mod', m, down: false }); heldOnHelper.delete(m); }
+    }
+  }
+  function clearOneShots() {
+    let changed = false;
+    for (const m of MODS) if (modState[m] === 1) { modState[m] = 0; changed = true; }
+    if (changed) refreshAllMods();
+  }
+
+  function pressMod(m) {
+    const now = performance.now();
+    const dbl = (now - (lastModTap[m] || 0)) < 320;
+    lastModTap[m] = now;
+    if (modState[m] === 2) {            // locked -> off (single tap clears a lock)
+      modState[m] = 0;
+    } else if (dbl) {                   // quick second tap -> lock
+      modState[m] = 2;
+    } else {                            // toggle one-shot on/off
+      modState[m] = modState[m] === 1 ? 0 : 1;
+    }
+    refreshAllMods();
+    // locked mods are physically held on the PC so combos like Alt+Tab+Tab cycle
+    if (modState[m] === 2) { if (!heldOnHelper.has(m)) { send({ t: 'mod', m, down: true }); heldOnHelper.add(m); } }
+    else if (modState[m] === 0) { if (heldOnHelper.has(m)) { send({ t: 'mod', m, down: false }); heldOnHelper.delete(m); } }
+  }
+
+  // wipe all modifier state (used on connect so a reload/reconnect starts clean)
+  function resetMods() {
+    MODS.forEach(m => { modState[m] = 0; });
+    heldOnHelper.clear();
+    refreshAllMods();
+    send({ t: 'reset' });
+  }
+
+  function bindKey(el, type, val, label) {
+    el.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      haptic();
+      if (type === 'm') { pressMod(val); return; }
+      if (type === 'L') { layer = val; buildKeyboard(); return; }
+
+      const cmdMods = activeMods().filter(m => m !== 'shift'); // ctrl/alt/win => chord
+      const shiftOn = modState['shift'] > 0;
+
+      if (type === 's') {                       // named special key
+        syncHeld(activeMods());
+        send({ t: 'key', key: val });
+        clearOneShots();
+        syncHeld(activeMods());
+      } else if (type === 'c') {                // printable char
+        if (cmdMods.length) {                   // command chord (Ctrl+C etc.)
+          syncHeld(activeMods());
+          send({ t: 'key', key: label });
+          clearOneShots();
+          syncHeld(activeMods());
+        } else {                                // plain typing
+          syncHeld([]);                         // ensure no stray mods held
+          const out = shiftOn ? shiftChar(label) : label;
+          send({ t: 'type', text: out });
+          if (modState['shift'] === 1) { modState['shift'] = 0; refreshAllMods(); }
+        }
+      }
+    });
+  }
+
+  function shiftChar(c) {
+    if (c.length === 1 && c >= 'a' && c <= 'z') return c.toUpperCase();
+    return c;
+  }
+
+  buildKeyboard();
+
+  // guard: kill any stray gestures / pinch zoom outside the pad
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('touchmove', e => {
+    if (e.target.closest('#pad') || e.target.closest('.key') || e.target.closest('#drawWrap') || e.target.closest('#panel') || e.target.closest('#deckEditor')) return;
+    e.preventDefault();
+  }, { passive: false });
+})();
+</script>
+</body>
+</html>
