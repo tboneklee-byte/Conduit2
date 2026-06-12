@@ -390,7 +390,7 @@
     <div id="kb"></div>
     <div id="drawWrap" class="hidden">
       <canvas id="draw"></canvas>
-      <div id="drawHint">draw with a finger or Apple&nbsp;Pencil<br>this surface maps 1:1 to your screen</div>
+      <div id="drawHint">draw&nbsp;·&nbsp;drag&nbsp;like&nbsp;the&nbsp;trackpad<br>left&nbsp;button&nbsp;stays&nbsp;held&nbsp;so&nbsp;you&nbsp;paint</div>
     </div>
     <div id="deckWrap" class="hidden">
       <div id="deckGrid"></div>
@@ -518,7 +518,6 @@
     document.getElementById('kb').classList.toggle('hidden', !(m === 'keyboard' || m === 'both'));
     document.getElementById('drawWrap').classList.toggle('hidden', m !== 'draw');
     document.getElementById('deckWrap').classList.toggle('hidden', m !== 'deck');
-    if (m === 'draw') resizeDrawCanvas();
     if (m === 'deck') renderDeck();
   }
   applyMode();
@@ -719,87 +718,47 @@
   }
   holdBtn('lclick', 'left'); holdBtn('rclick', 'right');
 
-  /* ============ drawing tablet ============ */
+  /* ============ draw (held-button trackpad) ============ */
+  // behaves like the trackpad (relative movement, same sensitivity) but holds the left
+  // button down the whole time a finger/Pencil is on the surface, so any drag paints.
   const draw = document.getElementById('draw');
   const drawWrap = document.getElementById('drawWrap');
-  const dctx = draw.getContext('2d');
-  let activePointer = null, penDown = false, inkLast = null;
-
-  function resizeDrawCanvas() {
-    const r = draw.getBoundingClientRect();
-    if (!r.width || !r.height) return;
-    const dpr = window.devicePixelRatio || 1;
-    draw.width = Math.round(r.width * dpr);
-    draw.height = Math.round(r.height * dpr);
-    dctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  window.addEventListener('resize', () => { if (body.dataset.mode === 'draw') resizeDrawCanvas(); });
-
-  function drawNorm(e) {
-    const r = draw.getBoundingClientRect();
-    return {
-      x: Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)),
-      y: Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)),
-      cx: e.clientX - r.left, cy: e.clientY - r.top
-    };
-  }
+  let drawActive = false, drawId = null, drawPen = false;
+  let drawLastX = 0, drawLastY = 0, drawLastT = 0;
 
   draw.addEventListener('pointerdown', e => {
     e.preventDefault();
-    if (penDown && e.pointerType !== 'pen') return;          // palm rejection while Pencil is active
-    if (activePointer !== null && e.pointerId !== activePointer) return;
-    activePointer = e.pointerId;
-    if (e.pointerType === 'pen') penDown = true;
+    if (drawPen && e.pointerType !== 'pen') return;          // palm rejection while Pencil is down
+    if (drawActive && e.pointerId !== drawId) return;
+    drawActive = true; drawId = e.pointerId;
+    if (e.pointerType === 'pen') drawPen = true;
     try { draw.setPointerCapture(e.pointerId); } catch (_) {}
     drawWrap.classList.add('inking');
-    const n = drawNorm(e);
-    inkLast = { x: n.cx, y: n.cy };
+    drawLastX = e.clientX; drawLastY = e.clientY; drawLastT = performance.now();
     haptic();
-    send({ t: 'pen', a: 'down', x: n.x, y: n.y });
+    send({ t: 'button', b: 'left', a: 'down' });             // latch the left button down
   });
 
   draw.addEventListener('pointermove', e => {
-    if (e.pointerId !== activePointer) {
-      // Apple Pencil hovering (not touching) -> move the cursor without drawing
-      if (activePointer === null && e.pointerType === 'pen') {
-        const n = drawNorm(e);
-        send({ t: 'pen', a: 'hover', x: n.x, y: n.y });
-      }
-      return;
-    }
+    if (!drawActive || e.pointerId !== drawId) return;
     e.preventDefault();
-    const n = drawNorm(e);
-    send({ t: 'pen', a: 'move', x: n.x, y: n.y });
-    // local ink feedback (width tracks Pencil pressure where available)
-    const w = 2 + (e.pressure ? e.pressure * 6 : 1.5);
-    dctx.strokeStyle = (getComputedStyle(root).getPropertyValue('--accent').trim() || '#00d6a4');
-    dctx.lineWidth = w; dctx.lineCap = 'round'; dctx.lineJoin = 'round';
-    dctx.beginPath(); dctx.moveTo(inkLast.x, inkLast.y); dctx.lineTo(n.cx, n.cy); dctx.stroke();
-    inkLast = { x: n.cx, y: n.cy };
+    const now = performance.now();
+    let dx = e.clientX - drawLastX, dy = e.clientY - drawLastY;
+    const dt = Math.max(now - drawLastT, 1);
+    const speed = Math.hypot(dx, dy) / dt;
+    const gain = MOVE_GAIN + speed * ACCEL;                  // same feel as the pad
+    pendingDX += dx * gain; pendingDY += dy * gain;          // sent by the shared rAF flush
+    drawLastX = e.clientX; drawLastY = e.clientY; drawLastT = now;
   });
 
   function endDraw(e) {
-    if (e.pointerId !== activePointer) return;
-    send({ t: 'pen', a: 'up' });
-    activePointer = null;
-    if (e.pointerType === 'pen') penDown = false;
+    if (!drawActive || e.pointerId !== drawId) return;
+    drawActive = false; drawId = null;
+    if (e.pointerType === 'pen') drawPen = false;
+    send({ t: 'button', b: 'left', a: 'up' });               // release on lift
   }
   draw.addEventListener('pointerup', endDraw);
   draw.addEventListener('pointercancel', endDraw);
-
-  // gently fade the local ink trail so the surface stays clean
-  function fadeLoop() {
-    if (body.dataset.mode === 'draw' && draw.width) {
-      const r = draw.getBoundingClientRect();
-      dctx.save();
-      dctx.globalCompositeOperation = 'destination-out';
-      dctx.fillStyle = 'rgba(0,0,0,0.05)';
-      dctx.fillRect(0, 0, r.width, r.height);
-      dctx.restore();
-    }
-    requestAnimationFrame(fadeLoop);
-  }
-  requestAnimationFrame(fadeLoop);
 
   /* ============ stream deck ============ */
   const DECK_DEFAULTS = [
